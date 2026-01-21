@@ -79,6 +79,8 @@ module shd_util
     public :: shd_util__ssort_i
     public :: shd_util__ssort_r
 
+    public :: shd_util__getBound
+
     public :: indexAt
     public :: distKm
 
@@ -1425,6 +1427,81 @@ subroutine shd_util__ssort_r(x, y, N, kFlag)
     return
 
 end subroutine shd_util__ssort_r
+
+subroutine shd_util__getBound(&
+    xvals, ifirst, ilast, x, &
+    ind1, ind2)
+
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    ! Description: finds the bounds xvals(ind1) and xvals(ind2)
+    !   for which x is bounded.
+    !╰────────────────────────────────────────────────────────────────────────────╯!
+
+    real,    intent(in)  :: xvals(*), x
+    integer, intent(in)  :: ifirst, ilast
+    integer, intent(out) :: ind1, ind2
+
+    integer :: i, imid
+
+    imid = ilast/2 + 1
+
+    if (xvals(ilast) .gt. xvals(ifirst)) then
+        if (x .gt. xvals(imid)) then
+            do i = imid, ilast - 1
+                if (xvals(i) .le. x .and. xvals(i + 1) .ge. x) then
+                    ind1 = i
+                    ind2 = i + 1
+                    return
+                end if
+            end do
+        else
+            do i = ifirst, imid
+                if (xvals(i) .le. x .and. xvals(i + 1) .ge. x) then
+                    ind1 = i
+                    ind2 = i + 1
+                    return
+                end if
+            end do
+        end if
+        if (x .lt. xvals(ifirst)) then
+            ind1 = ifirst
+            ind2 = ifirst + 1
+        else
+            ind1 = ilast - 1
+            ind2 = ilast
+        end if
+
+    else
+
+        if (x .lt. xvals(imid)) then
+            do i = imid, ilast - 1
+                if (xvals(i) .ge. x .and. xvals(i + 1) .le. x) then
+                    ind1 = i
+                    ind2 = i + 1
+                    return
+                end if
+            end do
+        else
+            do i = ifirst, imid
+                if (xvals(i) .ge. x .and. xvals(i + 1) .le. x) then
+                    ind1 = i
+                    ind2 = i + 1
+                    return
+                end if
+            end do
+        end if
+        if (x .gt. xvals(ifirst)) then
+            ind1 = ifirst
+            ind2 = ifirst + 1
+        else
+            ind1 = ilast - 1
+            ind2 = ilast
+        end if
+    end if
+
+    return
+
+end subroutine shd_util__getBound
 
 function indexAt(x0, x) result(i)
 

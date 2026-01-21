@@ -47,7 +47,8 @@ module shd_sfc
     use globals_obj,   only: prp_obj_, &
                              sfc_obj_
 
-    use shd_util, only: shd_util__computePlanck
+    use shd_util, only: shd_util__computePlanck, &
+                        shd_util__getBound
 
     implicit none
     private
@@ -71,15 +72,13 @@ module shd_sfc
     ! ocean brdf sub-modules (originally from 6SV code,
     !   https://salsa.umd.edu/6spage.html)
     !╭────────────────────────────────────────────────╮!
-    private :: whitecaps
-    private :: sunglint
-    private :: backscatter
+    private :: computeRefWhitecaps
+    private :: computeRefSunglint
+    private :: computeRefBackscatter
 
-    private :: indwat
-    private :: fresnel
-    private :: morcasiwat
-
-    private :: getbound
+    private :: getRefracIndexWater
+    private :: computeRefFresnel
+    private :: computeRefMorel
     !╰────────────────────────────────────────────────╯!
 
 contains
@@ -1277,25 +1276,25 @@ subroutine shd_sfc__brdfOcean(&
 
     ! get water refractive indices based on wavelenth (micron) and salinity
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    call indwat(waveLen, xsal, nr, ni)
+    call getRefracIndexWater(waveLen, xsal, nr, ni)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Compute whitecaps reflectance (Lambertian)
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    call whitecaps(waveLen, windSpeed, propWC, refWC)
+    call computeRefWhitecaps(waveLen, windSpeed, propWC, refWC)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! refGL: reflectance from sunglint (specular)
     !╭────────────────────────────────────────────────────────────────────────────╮!
     angAziSunWind = phiSW*rad2deg_
     angAziSunView = 180.0 - phiSV*rad2deg_
-    call sunglint(windSpeed, nr, ni, angZenSun, angZenView, angAziSunWind, angAziSunView, refGL)
+    call computeRefSunglint(windSpeed, nr, ni, angZenSun, angZenView, angAziSunWind, angAziSunView, refGL)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! refSW: reflectance due to scattering of underwater (Lambertian)
     !        refSW1: from Morel et al., 1988
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    call backscatter(waveLen, windSpeed, pcl, nr, ni, angZenSun, angZenView, refSW)
+    call computeRefBackscatter(waveLen, windSpeed, pcl, nr, ni, angZenSun, angZenView, refSW)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Total reflectance of sea water
@@ -1312,7 +1311,7 @@ subroutine shd_sfc__brdfOcean(&
 
 end subroutine shd_sfc__brdfOcean
 
-subroutine whitecaps(waveLen, windSpeed, propWC, refWC)
+subroutine computeRefWhitecaps(waveLen, windSpeed, propWC, refWC)
 
     ! Description: Effective reflectance of the whitecaps
     ! input:
@@ -1355,9 +1354,9 @@ subroutine whitecaps(waveLen, windSpeed, propWC, refWC)
 
     return
 
-end subroutine whitecaps
+end subroutine computeRefWhitecaps
 
-subroutine sunglint(&
+subroutine computeRefSunglint(&
     windSpeed, nr, ni, &
     angZenSun, angZenView, &
     angAziSunWind, angAziSunView, &
@@ -1488,7 +1487,7 @@ subroutine sunglint(&
     if (sinChi .gt.  1.0) sinChi =  0.99999999999
     if (sinChi .lt. -1.0) sinChi = -0.99999999999
 
-    call fresnel(nr, ni, cosChi, sinChi, coefFR)
+    call computeRefFresnel(nr, ni, cosChi, sinChi, coefFR)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Compute specular reflection from sunglint
@@ -1499,9 +1498,9 @@ subroutine sunglint(&
 
     return
 
-end subroutine sunglint
+end subroutine computeRefSunglint
 
-subroutine backscatter(&
+subroutine computeRefBackscatter(&
     waveLen, windSpeed, pcl, nr, ni, &
     angZenSun, angZenView, &
     refSW)
@@ -1540,11 +1539,11 @@ subroutine backscatter(&
 
     ! Compute backscattered reflectance from the sea water (Lambertian)
     !   water reflectance below the sea surface
-    call morcasiwat(waveLen, pcl, refSW1)
+    call computeRefMorel(waveLen, pcl, refSW1)
 
-    call getbound( wsbnd, 1, 6,       windSpeed, iws1, iws2)
-    call getbound(angbnd, 1, 5,  angZenSun, isz1, isz2)
-    call getbound(angbnd, 1, 5, angZenView, ivz1, ivz2)
+    call shd_util__getBound( wsbnd, 1, 6,       windSpeed, iws1, iws2)
+    call shd_util__getBound(angbnd, 1, 5,  angZenSun, isz1, isz2)
+    call shd_util__getBound(angbnd, 1, 5, angZenView, ivz1, ivz2)
     tds = tdsbnd(isz1, iws1)
     tdv = tdvbnd(ivz1, iws1)
 
@@ -1558,9 +1557,9 @@ subroutine backscatter(&
 
     refSW = (1.0/(n12*n12)) * refSW1*tds*tdv/(1.0 - a*refSW1)
 
-end subroutine backscatter
+end subroutine computeRefBackscatter
 
-subroutine morcasiwat(waveLen, pcl, refSW)
+subroutine computeRefMorel(waveLen, pcl, refSW)
 
     ! Description:
     !   Spectral diffuse attenuation coefficient of Case I Waters as predicted
@@ -1701,9 +1700,9 @@ subroutine morcasiwat(waveLen, pcl, refSW)
         refSW0 = refSW
     end do
 
-end subroutine morcasiwat
+end subroutine computeRefMorel
 
-subroutine fresnel(&
+subroutine computeRefFresnel(&
     nr, ni, cosChi, sinChi, &
     coefFR)
 
@@ -1760,9 +1759,9 @@ subroutine fresnel(&
 
     return
 
-end subroutine fresnel
+end subroutine computeRefFresnel
 
-subroutine indwat(waveLen, xsal, nr, ni)
+subroutine getRefracIndexWater(waveLen, xsal, nr, ni)
 
     ! Description:
     !   Retrieve indices of refraction for pure water
@@ -1870,81 +1869,6 @@ subroutine indwat(waveLen, xsal, nr, ni)
 
     return
 
-end subroutine indwat
-
-subroutine getbound(&
-    xvals, ifirst, ilast, x, &
-    ind1, ind2)
-
-    !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! Description: finds the bounds xvals(ind1) and xvals(ind2)
-    !   for which x is bounded.
-    !╰────────────────────────────────────────────────────────────────────────────╯!
-
-    real,    intent(in)  :: xvals(*), x
-    integer, intent(in)  :: ifirst, ilast
-    integer, intent(out) :: ind1, ind2
-
-    integer :: i, imid
-
-    imid = ilast/2 + 1
-
-    if (xvals(ilast) .gt. xvals(ifirst)) then
-        if (x .gt. xvals(imid)) then
-            do i = imid, ilast - 1
-                if (xvals(i) .le. x .and. xvals(i + 1) .ge. x) then
-                    ind1 = i
-                    ind2 = i + 1
-                    return
-                end if
-            end do
-        else
-            do i = ifirst, imid
-                if (xvals(i) .le. x .and. xvals(i + 1) .ge. x) then
-                    ind1 = i
-                    ind2 = i + 1
-                    return
-                end if
-            end do
-        end if
-        if (x .lt. xvals(ifirst)) then
-            ind1 = ifirst
-            ind2 = ifirst + 1
-        else
-            ind1 = ilast - 1
-            ind2 = ilast
-        end if
-
-    else
-
-        if (x .lt. xvals(imid)) then
-            do i = imid, ilast - 1
-                if (xvals(i) .ge. x .and. xvals(i + 1) .le. x) then
-                    ind1 = i
-                    ind2 = i + 1
-                    return
-                end if
-            end do
-        else
-            do i = ifirst, imid
-                if (xvals(i) .ge. x .and. xvals(i + 1) .le. x) then
-                    ind1 = i
-                    ind2 = i + 1
-                    return
-                end if
-            end do
-        end if
-        if (x .gt. xvals(ifirst)) then
-            ind1 = ifirst
-            ind2 = ifirst + 1
-        else
-            ind1 = ilast - 1
-            ind2 = ilast
-        end if
-    end if
-
-    return
-
-end subroutine getbound
+end subroutine getRefracIndexWater
 
 end module shd_sfc
