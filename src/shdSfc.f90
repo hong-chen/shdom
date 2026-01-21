@@ -1394,7 +1394,10 @@ subroutine sunglint(&
     real :: phiSV, sinThetaS, sinThetaV, cosThetaS, cosThetaV, cosBeta
     real :: Zx, Zy, tanTilt, betaTilt
     real :: cosChi, sinChi, cos2Chi, coefFR
-    real :: sigmaC, sigmaU, C21, C03, C40, C04, C22, phiSW, xe, xn, xe2, xn2, coef, Pxy
+    real :: sigma2C, sigma2U, sigmaC, sigmaU
+    real :: C21, C03, C40, C04, C22, phiSW, xi, eta, xi2, eta2, coef, Pxy
+
+    logical :: isClean = .true. ! True -> clean surface; False -> slick surface
 
     cosThetaS = cos(angZenSun *deg2rad_)
     cosThetaV = cos(angZenView*deg2rad_)
@@ -1403,39 +1406,67 @@ subroutine sunglint(&
 
     phiSV = angAziSunView*deg2rad_
 
-    ! calculate tilt angle (in radians)
+    ! calculate tilt angle beta (in radians)
     !╭────────────────────────────────────────────────────────────────────────────╮!
     Zx =            (-sinThetaV*sin(phiSV))/(cosThetaS + cosThetaV)
     Zy = (sinThetaS + sinThetaV*cos(phiSV))/(cosThetaS + cosThetaV)
     tanTilt  = sqrt(Zx*Zx + Zy*Zy)
     betaTilt = atan(tanTilt)
+    cosBeta  = cos(betaTilt)
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Anisotropic Gaussian distribution probability
+    ! Cox and Munk, 1954 - Measurement of the Roughness of the Sea
+    !   Surface from Photographs of the Sun's Glitter
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    sigmaC = 0.003 + 0.00192*windSpeed
-    sigmaU = 0.00316*windSpeed
+    ! Sect. 6.3
+    if (isClean) then
+        sigma2C = 0.003 + 0.00192*windSpeed
+        sigma2U =         0.00316*windSpeed
+    else
+        sigma2C = 0.003 + 0.00084*windSpeed
+        sigma2U = 0.005 + 0.00078*windSpeed
+    end if
+    sigmaC = sqrt(sigma2C)
+    sigmaU = sqrt(sigma2U)
 
-    C03 = 0.04 - 0.033*windSpeed
-    C04 = 0.23
-    C21 = 0.01 - 0.0086*windSpeed
-    C22 = 0.12
-    C40 = 0.40
+    ! Sect. 6.4
+    if (isClean) then
+        C21 = 0.01 - 0.0086*windSpeed
+        C03 = 0.04 - 0.033 *windSpeed
+        C40 = 0.40
+        C22 = 0.12
+        C04 = 0.23
+    else
+        C21 = 0.00
+        C03 = 0.02
+        C40 = 0.36
+        C22 = 0.10
+        C04 = 0.26
+    end if
 
     ! relative azimuth between Sun and Wind
     phiSW = angAziSunWind*deg2rad_
 
-    xe = ( cos(phiSW)*Zx + sin(phiSW)*Zy)/sqrt(SigmaC)
-    xn = (-sin(phiSW)*Zx + cos(phiSW)*Zy)/sqrt(SigmaU)
-    xe2 = xe*xe
-    xn2 = xn*xn
+    xi   = ( cos(phiSW)*Zx + sin(phiSW)*Zy)/SigmaC
+    xi2  = xi*xi
 
-    coef =  1.0 - C21/2.0 *(xe2 - 1.0)*xn - C03/6.0*(xn2 - 3.0)*xn
-    coef = coef + C40/24.0*(xe2*xe2 - 6.0*xe2 + 3.0)
-    coef = coef + C04/24.0*(xn2*xn2 - 6.0*xn2 + 3.0)
-    coef = coef + C22/4.0 *(xe2 - 1.0)*(xn2 - 1.0)
+    eta  = (-sin(phiSW)*Zx + cos(phiSW)*Zy)/SigmaU
+    eta2 = eta*eta
 
-    Pxy = coef/2.0/pi_/sqrt(sigmaU)/sqrt(sigmaC)*exp(-(xe2 + xn2)/2.0)
+    ! square bracket in Eq. 18
+    ! note: in Cox and Munk, 1954 Statistics paper,
+    !   `eta` term is not included in [C21/2.0 *(xi2  - 1.0)*eta]
+    !   in Eq. 3, I believe is a typo
+    coef =  1.0 - &
+            C21/2.0 *(xi2  - 1.0)*eta - &
+            C03/6.0 *(eta2 - 3.0)*eta + &
+            C40/24.0*(xi2*xi2 - 6.0*xi2 + 3.0) + &
+            C22/4.0 *(xi2 - 1.0)*(eta2 - 1.0) + &
+            C04/24.0*(eta2*eta2 - 6.0*eta2 + 3.0)
+
+    ! Eq. 18
+    Pxy = exp(-(xi2+eta2)/2.0)*coef/(2.0*pi_*sigmaU*sigmaC)
 
     ! note: this is added (Jan 20, 2026, by Hong Chen)
     !   to prevent negative probability
@@ -1462,9 +1493,7 @@ subroutine sunglint(&
 
     ! Compute specular reflection from sunglint
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    cosBeta = cos(betaTilt)
-
-    ! corresponds to Eq. C3 in Kotchenova et al., 2007
+    ! Eq. C3 (in Appendix C) in Kotchenova et al., 2007
     refGL = pi_*coefFR*Pxy/(4.0*cosThetaS*cosThetaV*(cosBeta**4))
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
