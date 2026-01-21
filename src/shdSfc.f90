@@ -1334,10 +1334,10 @@ subroutine whitecaps(waveLen, windSpeed, propWC, refWC)
     real, intent(out) :: propWC, refWC
 
     integer :: iwvl
-    real :: wvlP, refEff, refEffTable(39)
+    real :: wvlP, refEff, refTable(39)
 
     ! effective reflectance of the whitecaps (Koepke, 1984)
-    data refEffTable/&
+    data refTable/&
         0.220, 0.220, 0.220, 0.220, 0.220, 0.220, 0.215, 0.210, 0.200, 0.190,&
         0.175, 0.155, 0.130, 0.080, 0.100, 0.105, 0.100, 0.080, 0.045, 0.055,&
         0.065, 0.060, 0.055, 0.040, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,&
@@ -1345,7 +1345,7 @@ subroutine whitecaps(waveLen, windSpeed, propWC, refWC)
 
     iwvl = 1 + int((waveLen-0.2)/0.1)
     wvlP = 0.5 + (iwvl - 1)*0.1
-    refEff = refEffTable(iwvl+1) + (waveLen-wvlP)/0.1 * (refEffTable(iwvl) - refEffTable(iwvl+1))
+    refEff = refTable(iwvl+1) + (waveLen-wvlP)/0.1 * (refTable(iwvl) - refTable(iwvl+1))
 
     ! corresponds to Eq. (3) in Koepke, 1984 (originally from Monahan and O’Muircheartaigh, 1980)
     propWC = 2.95e-6*(windSpeed**3.52)
