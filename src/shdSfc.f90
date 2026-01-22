@@ -51,7 +51,6 @@ module shd_sfc
                         shd_util__getBound
 
     implicit none
-    private
 
     integer, parameter :: R__  = selected_real_kind(6) ! default precision for float
     integer, parameter :: I__  = selected_int_kind(9)  ! default precision for integer
@@ -72,13 +71,13 @@ module shd_sfc
     ! ocean brdf sub-modules (originally from 6SV code,
     !   https://salsa.umd.edu/6spage.html)
     !╭────────────────────────────────────────────────╮!
-    private :: computeRefWhitecaps
-    private :: computeRefSunglint
-    private :: computeRefBackscatter
+    public :: computeRefWhitecaps
+    public :: computeRefSunglint
+    public :: computeRefBackscatter
 
-    private :: getRefracIndexWater
-    private :: computeRefFresnel
-    private :: computeRefMorel
+    public :: getRefracIndexWater
+    public :: computeRefFresnel
+    public :: computeRefMorel
     !╰────────────────────────────────────────────────╯!
 
 contains
