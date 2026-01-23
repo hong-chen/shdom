@@ -805,11 +805,11 @@ subroutine shd_rad__computeRadDir(&
     &MAXNBC, NTOPPTS, NBOTPTS, BCPTR, BCRAD,&
     &fluxDir, FLUXES,&
     &src1_Shdo, GRIDRAD,&
-    &OUTPARMS, IRAD, RADOUT)
+    &OUTPARMS, irad, RADOUT)
 
     ! Computes the radiances for the specified locations and directions
 
-    integer IRAD
+    integer irad
     integer MAXNBC, NTOPPTS, NBOTPTS
     integer BCPTR(MAXNBC, 2)
     logical doDeltaM
@@ -817,11 +817,11 @@ subroutine shd_rad__computeRadDir(&
     real fluxDir(rtm_obj_%Npts), FLUXES(2, rtm_obj_%Npts)
     real src1_Shdo(shdo_obj_%Nstokes, rtm_obj_%Npts), GRIDRAD(shdo_obj_%Nstokes, rtm_obj_%Npts)
     real OUTPARMS(*), RADOUT(shdo_obj_%Nstokes, *)
-    integer I, IBC, IANG, JX, JY, K, SIDE
-    integer NANGOUT, NXOUT, NYOUT
+    integer I, IBC, iang, ix, iy, K, SIDE
+    integer NangOut, NxOut, NyOut
     logical isValidRad
     real(RD_) :: X0, Y0, Z0, XE, YE, ZE, trans, radI_Shdo(4)
-    real MUOUT, PHIOUT, PHID
+    real muRay, phiRay, phiDeg
     real xDomain, yDomain, xStart, yStart
 
     ! added for fixing the "domain shift" issue
@@ -830,133 +830,156 @@ subroutine shd_rad__computeRadDir(&
     !╰──────────────────────────────────────────────────────────────╯!
 
     ! Make the isotropic radiances for the top boundary
-    call shd_init__makeTopRad(src_obj_%type, src_obj_%skyRad, src_obj_%waveNum, src_obj_%avgWaveLen,&
-        &src_obj_%unit, NTOPPTS, shdo_obj_%Nstokes, BCRAD(1, 1))
+    !╭────────────────────────────────────────────────────────────────────────────╮!
+    call shd_init__makeTopRad(&
+        src_obj_%type, src_obj_%skyRad, &
+        src_obj_%waveNum, src_obj_%avgWaveLen, &
+        src_obj_%unit, NTOPPTS, shdo_obj_%Nstokes, BCRAD(1, 1))
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Make the bottom boundary radiances for the Lambertian surfaces.
     ! Compute the upwelling bottom radiances using the downwelling fluxes.
+    !╭────────────────────────────────────────────────────────────────────────────╮!
     if (sfc_obj_%type .eq. 'FL') then
-
-        call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2),&
-            &fluxDir, FLUXES, src_obj_%type,&
-            &src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
-
+        call shd_init__makeBotRadUL(NBOTPTS, BCPTR(1, 2), &
+            fluxDir, FLUXES, src_obj_%type, &
+            src_obj_%waveNum, src_obj_%avgWaveLen, src_obj_%unit, &
+            shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     else if (sfc_obj_%type .eq. 'VL') then
-
         call shd_init__makeBotRadVL(NBOTPTS, BCPTR(1, 2),&
-            &fluxDir, FLUXES, src_obj_%type,&
-            &shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
-
+            fluxDir, FLUXES, src_obj_%type, &
+            shdo_obj_%Nstokes, BCRAD(1, 1 + NTOPPTS))
     end if
+    !╰────────────────────────────────────────────────────────────────────────────╯!
 
     ! Setup the regularly spaced radiance locations
     xDomain = rtm_obj_%x(rtm_obj_%Nx + 1 - ibits(rtm_obj_%flag_bc, 0, 1)) - rtm_obj_%x(1) + 2*OUTPARMS(4)
     xStart = -OUTPARMS(4)
     if (OUTPARMS(2) .eq. 0.0) then
-        NXOUT = 1
+        NxOut = 1
     else
-        NXOUT = max(1, nint(xDomain/OUTPARMS(2)))
+        NxOut = max(1, nint(xDomain/OUTPARMS(2)))
     end if
     yDomain = rtm_obj_%y(rtm_obj_%Ny + 1 - ibits(rtm_obj_%flag_bc, 1, 1)) - rtm_obj_%y(1) + 2*OUTPARMS(5)
     yStart = -OUTPARMS(5)
     if (OUTPARMS(3) .eq. 0.0) then
-        NYOUT = 1
+        NyOut = 1
     else
-        NYOUT = max(1, nint(yDomain/OUTPARMS(3)))
+        NyOut = max(1, nint(yDomain/OUTPARMS(3)))
     end if
     Z0 = min(max(OUTPARMS(1), rtm_obj_%z(1)), rtm_obj_%z(rtm_obj_%Nz))
-    NANGOUT = nint(OUTPARMS(6))
+    NangOut = nint(OUTPARMS(6))
 
     ! Loop over the radiance directions
-    do IANG = 1, NANGOUT
+    do iang = 1, NangOut
+
+        ! get muRay and phiRay for informing direction
+        !╭────────────────────────────────────────────────────────────────────────────╮!
         if (sen_obj_%fname(1:4) .ne. 'NONE') then
-            MUOUT = view_Sen_(1, IANG)
-            PHID  = view_Sen_(2, IANG)
+            muRay  = view_Sen_(1, iang)
+            phiDeg = view_Sen_(2, iang)
         else
-            MUOUT = OUTPARMS(2*IANG + 5)
-            PHID  = OUTPARMS(2*IANG + 6)
+            muRay  = OUTPARMS(2*iang + 5)
+            phiDeg = OUTPARMS(2*iang + 6)
         end if
-        PHIOUT = PHID*deg2rad_
+        phiRay = phiDeg*deg2rad_
+        !╰────────────────────────────────────────────────────────────────────────────╯!
 
         ! added for fixing the "domain shift" issue (only for 3D)
-        !╭────────────────────────────────────────────────╮!
+        !╭────────────────────────────────────────────────────────────────────────────╮!
         if (rtm_obj_%flag_ip .eq. 0) then
             DS_Z0 = Z0 - rtm_obj_%z(1)
-            DS_VZA_RAD = acos(MUOUT)
-            DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(PHIOUT)
-            DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(PHIOUT)
+            DS_VZA_RAD = acos(muRay)
+            DS_XOFFSET = DS_Z0*tan(DS_VZA_RAD)*cos(phiRay)
+            DS_YOFFSET = DS_Z0*tan(DS_VZA_RAD)*sin(phiRay)
             xStart = -OUTPARMS(4) + DS_XOFFSET
             yStart = -OUTPARMS(5) + DS_YOFFSET
         endif
-        !╰────────────────────────────────────────────────╯!
+        !╰────────────────────────────────────────────────────────────────────────────╯!
 
-        if (MUOUT .eq. 0.0) then
-            if (verbose_ .ge. 4) write(6, *) 'Warning [_computeRadDir]: Bad MUOUT for radiance', IANG, MUOUT, PHID
-            MUOUT = accSolv_
-            write(6, *) '                       New MUOUT=', MUOUT
+        ! deal with bad mu, such as viewing zenith angle = 0, >90, <-90 degrees
+        !╭────────────────────────────────────────────────────────────────────────────╮!
+        if (muRay .eq. 0.0) then
+            if (verbose_ .ge. 4) then
+                write(6, *) 'Warning [_computeRadDir]: Bad muRay for radiance', iang, muRay, phiDeg
+            end if
+            muRay = accSolv_
+            write(6, *) '                       New muRay=', muRay
         end if
 
-        if (abs(MUOUT) .gt. 1.0) then
-            if (verbose_ .ge. 4) write(6, *) 'Warning [_computeRadDir]: Bad MUOUT for radiance', IANG, MUOUT, PHID
-            if (MUOUT .gt.  1.0) MUOUT =  1.0
-            if (MUOUT .lt. -1.0) MUOUT = -1.0
-            write(6, *) '                       New MUOUT=', MUOUT
+        if (abs(muRay) .gt. 1.0) then
+            if (verbose_ .ge. 4) then
+                write(6, *) 'Warning [_computeRadDir]: Bad muRay for radiance', iang, muRay, phiDeg
+            end if
+            if (muRay .gt.  1.0) muRay =  1.0
+            if (muRay .lt. -1.0) muRay = -1.0
+            write(6, *) '                       New muRay=', muRay
         end if
+        !╰────────────────────────────────────────────────────────────────────────────╯!
 
         ! Compute the source function throughout grid for this angle
+        !╭────────────────────────────────────────────────────────────────────────────╮!
         call shd_src__computeSrcDir(&
-            &doDeltaM, MUOUT, PHIOUT,&
-            &fluxDir, src1_Shdo,&
-            &isrcJ_Shdo_, srcJ_Shdo_)
+            doDeltaM, muRay, phiRay, &
+            fluxDir, src1_Shdo, &
+            isrcJ_Shdo_, srcJ_Shdo_)
+        !╰────────────────────────────────────────────────────────────────────────────╯!
 
-        ! Set the radiance field to -1, so we can determine valid ra
-        !   Also set the source array to the extinction times the so
+        ! Set the radiance field to -1, so we can determine valid radiance
+        !   Also set the source array to the extinction times the source
         !   function, so the grid interpolation is correct.
+        !╭────────────────────────────────────────────────────────────────────────────╮!
         do I = 1, rtm_obj_%Npts
             GRIDRAD(1, I) = -1.0
             src1_Shdo(:, I) = src1_Shdo(:, I)*ext_Rtm_(I)
         end do
+        !╰────────────────────────────────────────────────────────────────────────────╯!
+
         ! Get boundary radiances: either top or bottom
-        ! Isotropic top boundary or Lambertian bottom boundary can u
+        !   Isotropic top boundary or Lambertian bottom boundary can use
         !   the previously computed boundary radiances in BCRAD,
         !   otherwise, compute the radiance for this angle
         !   by integrating over the stored downwelling radiances.
-        if (MUOUT .lt. 0.0) then
+        !╭────────────────────────────────────────────────────────────────────────────╮!
+        if (muRay .lt. 0.0) then
             do IBC = 1, NTOPPTS
                 I = BCPTR(IBC, 1)
                 GRIDRAD(:, I) = BCRAD(:, IBC)
             end do
         else
             if (.not. sfc_obj_%isLambertian) then
-                call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                    &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, &
-                    &shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, MUOUT, PHIOUT,&
-                    &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, fluxDir,&
-                    &shdo_obj_%Nstokes,&
-                    &BCRAD(1, 1 + NTOPPTS))
+                call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2), &
+                    shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, &
+                    shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, muRay, phiRay, &
+                    src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, fluxDir, &
+                    shdo_obj_%Nstokes, &
+                    BCRAD(1, 1 + NTOPPTS))
             end if
             do IBC = 1, NBOTPTS
                 I = BCPTR(IBC, 2)
                 GRIDRAD(:, I) = BCRAD(:, NTOPPTS + IBC)
             end do
         end if
+        !╰────────────────────────────────────────────────────────────────────────────╯!
 
         ! Integrate backward from the location to get the radiance
+        !╭────────────────────────────────────────────────────────────────────────────╮!
         Y0 = yStart
-        do JY = 1, NYOUT
+        do iy = 1, NyOut
             X0 = xStart
-            do JX = 1, NXOUT
-                IRAD = IRAD + 1
+            do ix = 1, NxOut
+                irad = irad + 1
                 trans = 1.0d0; radI_Shdo(:) = 0.0d0
-                call shd_src__integrateSrcDir(shdo_obj_%Nstokes,&
-                    &MUOUT, PHIOUT, GRIDRAD, src1_Shdo,&
-                    &X0, Y0, Z0, XE, YE, ZE, SIDE,&
-                    &trans, radI_Shdo, isValidRad)
-                RADOUT(:, IRAD) = radI_Shdo(1:shdo_obj_%Nstokes)
+                call shd_src__integrateSrcDir(shdo_obj_%Nstokes, &
+                    muRay, phiRay, GRIDRAD, src1_Shdo, &
+                    X0, Y0, Z0, XE, YE, ZE, SIDE, &
+                    trans, radI_Shdo, isValidRad)
+                RADOUT(:, irad) = radI_Shdo(1:shdo_obj_%Nstokes)
                 X0 = X0 + OUTPARMS(2)
             end do
             Y0 = Y0 + OUTPARMS(3)
         end do
+        !╰────────────────────────────────────────────────────────────────────────────╯!
 
     end do
 
