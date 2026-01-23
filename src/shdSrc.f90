@@ -987,7 +987,7 @@ subroutine shd_src__integrateSrcDir(NSTOKES,&
     threshTau = 0.1
     EPS = 1.0e-4*(xyz_Rtm_(3, i8Grid_Cell_(8, 1)) - xyz_Rtm_(3, i8Grid_Cell_(1, 1)))
 
-    ! Make the ray direction (opposite to the discrete ordinate dire
+    ! Make the ray direction (opposite to the discrete ordinate diretion)
     call shd_util__computeRayVect(dble(muRay), dble(phiRay), &
         CX, CY, CZ, CXINV, CYINV, CZINV, &
         ratioX, ratioY)

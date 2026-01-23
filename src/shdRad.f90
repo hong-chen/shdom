@@ -929,7 +929,8 @@ subroutine shd_rad__computeRadDir(&
         else
             if (.not. sfc_obj_%isLambertian) then
                 call shd_init__makeBotRadV(NBOTPTS, 1, NBOTPTS, BCPTR(1, 2),&
-                    &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, MUOUT, PHIOUT,&
+                    &shdo_obj_%Nmu, shdo_obj_%maxNphiA, shdo_obj_%NphiA, &
+                    &shdo_obj_%mu, shdo_obj_%phi, shdo_obj_%wgt, MUOUT, PHIOUT,&
                     &src_obj_%type, src_obj_%avgWaveLen, src_obj_%mu0, src_obj_%phi0, fluxDir,&
                     &shdo_obj_%Nstokes,&
                     &BCRAD(1, 1 + NTOPPTS))
@@ -1135,7 +1136,7 @@ subroutine shd_rad__computeRadRay(&
                 stop
             end if
 
-            ! muRay,PHRAY is camera pixel viewing direction;
+            ! muRay,phiRay is camera pixel viewing direction;
             ! MU2,PHI2 is radiance travel direction (the opposite)
             muRay = sngl(COSTH)
             phiRay = sngl(PHIR)
