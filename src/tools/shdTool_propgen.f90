@@ -908,35 +908,37 @@ contains
             end if
         end do
 
-        ! description for binary data
-        !╭────────────────────────────────────────────────╮!
-        write(3, '(A)') '! The following provides information for interpreting binary data:'
-        write(3, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
-        write(3, '(A, 4(I10,A))') '! ', NX, ',', NY, ',', NZT, ',', 4, ''
-        !╰────────────────────────────────────────────────╯!
+        if (NX*NY*NZT .gt. 100) then
+            ! description for binary data
+            !╭────────────────────────────────────────────────╮!
+            write(3, '(A)') '! The following provides information for interpreting binary data:'
+            write(3, '(A)') '! '//trim(adjustl(DATA_POSTFIX))
+            write(3, '(A, 4(I10,A))') '! ', NX, ',', NY, ',', NZT, ',', 4, ''
+            !╰────────────────────────────────────────────────╯!
 
-        ! Write one line of optical properties for each grid point (binary)
-        !╭────────────────────────────────────────────────╮!
-        open(UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='REPLACE',&
-            &form='UNFORMATTED', access='STREAM')
-        write(88) (((                     TEMP(IZ), IZ=1,NZT), IY=1,NY), IX=1,NX)
-        write(88) (((          EXTINCT(IZ, IY, IX), IZ=1,NZT), IY=1,NY), IX=1,NX)
-        write(88) (((            SSALB(IZ, IY, IX), IZ=1,NZT), IY=1,NY), IX=1,NX)
-        write(88) (((PHASECONV(IPHASE(IZ, IY, IX)), IZ=1,NZT), IY=1,NY), IX=1,NX)
-        close(88)
-        !╰────────────────────────────────────────────────╯!
-
-        ! original
-        !╭────────────────────────────────────────────────╮!
-        !do IX = 1, NX
-        !    do IY = 1, NY
-        !        do IZ = 1, NZT
-        !            write(3, '(3(1X,I4),1X,F5.1,1X,F9.4,1X,F8.6,1X,I3)') IX, IY, IZ, &
-        !                TEMP(IZ), EXTINCT(IZ, IY, IX), SSALB(IZ, IY, IX), PHASECONV(IPHASE(IZ, IY, IX))
-        !        end do
-        !    end do
-        !end do
-        !╰────────────────────────────────────────────────╯!
+            ! Write one line of optical properties for each grid point (binary)
+            !╭────────────────────────────────────────────────╮!
+            open(UNIT=88, FILE=trim(adjustl(OUTFILE_DATA)), STATUS='REPLACE',&
+                &form='UNFORMATTED', access='STREAM')
+            write(88) (((                     TEMP(IZ), IZ=1,NZT), IY=1,NY), IX=1,NX)
+            write(88) (((          EXTINCT(IZ, IY, IX), IZ=1,NZT), IY=1,NY), IX=1,NX)
+            write(88) (((            SSALB(IZ, IY, IX), IZ=1,NZT), IY=1,NY), IX=1,NX)
+            write(88) (((PHASECONV(IPHASE(IZ, IY, IX)), IZ=1,NZT), IY=1,NY), IX=1,NX)
+            close(88)
+            !╰────────────────────────────────────────────────╯!
+        else
+            ! original
+            !╭────────────────────────────────────────────────╮!
+            do IX = 1, NX
+               do IY = 1, NY
+                   do IZ = 1, NZT
+                       write(3, '(3(1X,I4),3(1X,E15.8),1X,I3)') IX, IY, IZ, &
+                           TEMP(IZ), EXTINCT(IZ, IY, IX), SSALB(IZ, IY, IX), PHASECONV(IPHASE(IZ, IY, IX))
+                   end do
+               end do
+            end do
+            !╰────────────────────────────────────────────────╯!
+        end if
 
         close(3)
 
