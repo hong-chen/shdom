@@ -403,7 +403,9 @@ subroutine shd_src__computeSrcDir(&
     allocate(YlmRay(prp_obj_%NlegSet, shdo_obj_%Nlm), &
              YlmSun(prp_obj_%NlegSet, shdo_obj_%Nlm))
     allocate(legScat(0:prp_obj_%Nleg))
-    allocate(legOri(2, 0:prp_obj_%Nleg), scatVect(shdo_obj_%Nstokes, prp_obj_%Npha))
+    allocate(legOri(2, 0:prp_obj_%Nleg), &
+             scatVect(shdo_obj_%Nstokes, prp_obj_%Npha))
+
     if (abs(muRay) .gt. 1.0) stop 'Error [_computeOneSrc]: Bad muRay.'
 
     doTMS = doDeltaM
@@ -424,9 +426,10 @@ subroutine shd_src__computeSrcDir(&
 
         sec0 = 1.0/abs(src_obj_%mu0)
 
-        muScat = src_obj_%mu0*muRay + sqrt((1.0d0 - src_obj_%mu0**2)*&
-                                             (1.0d0 - muRay**2))*&
-                                        cos(src_obj_%phi0 - phiRay)
+        muScat = src_obj_%mu0*muRay + &
+            sqrt((1.0d0 - src_obj_%mu0**2)* &
+                 (1.0d0 - muRay**2))* &
+                 cos(src_obj_%phi0 - phiRay)
 
         if ((prp_obj_%Npha .eq. 0) .and. doTMS) then
             ! If non-tabulate phase functions (unpolarized) then
@@ -444,8 +447,10 @@ subroutine shd_src__computeSrcDir(&
     !   the single scattered solar Stokes vector to outgoing direction
     if ((src_obj_%type .ne. 'T') .and. doTMS .and. (prp_obj_%Npha .gt. 0)) then
         do IPH = 1, prp_obj_%Npha
+
             ! Unscaled the needed Legendre coefficients, but divide by 1-f
             !   because extinction is still scaled (for TMS method)
+            !╭────────────────────────────────────────────────────────────────────────────╮!
             F = leg_Rtm_(1, shdo_obj_%maxNl + 1, IPH)
             do L = 0, prp_obj_%Nleg
                 if (L .le. shdo_obj_%maxNl) then
@@ -461,52 +466,70 @@ subroutine shd_src__computeSrcDir(&
                     end if
                 end if
             end do
+            !╰────────────────────────────────────────────────────────────────────────────╯!
+
             ! Sum the Wigner series (for A1 and B1), rotate the plane of
             !   polarization to the outgoing direction, and return the Stoke
+            !╭────────────────────────────────────────────────────────────────────────────╮!
             call shd_src__computeSolarStokesVect(legOri, muScat,&
                 &src_obj_%mu0, muRay, src_obj_%phi0 - phiRay, shdo_obj_%Nstokes,&
                 &scatVect(1, IPH))
+            !╰────────────────────────────────────────────────────────────────────────────╯!
+
             if (scatVect(1, IPH) .le. 0.0) then
                 write(6, *) 'Error [_computeOneSrc]: negative source function',&
                     &' for tabulated phase function:', IPH, muRay, phiRay, scatVect(1, IPH)
                 stop
             end if
+
         end do
     end if
 
     ! Loop over all the grid points, computing the source function
     !   at the viewing angle from the spherical harmonic source func
     do I = 1, rtm_obj_%Npts
+
         IS = isrcJ_Shdo(I)
         NS = isrcJ_Shdo(I + 1) - IS
+
         ! Sum over the real generalized spherical harmonic series
         !   of the source function
+        !╭────────────────────────────────────────────────────────────────────────────╮!
         srcRay_Shdo(:, I) = 0.0
         do J = 1, NS
             srcRay_Shdo(1, I) = srcRay_Shdo(1, I) + srcJ_Shdo(1, IS + J)*YlmRay(1, J)
         end do
+
         if (isPol_) then
             do J = 1, NS
-                srcRay_Shdo(2, I) = srcRay_Shdo(2, I) + srcJ_Shdo(2, IS + J)*YlmRay(2, J)&
-                    &+ srcJ_Shdo(3, IS + J)*YlmRay(5, J)
-                srcRay_Shdo(3, I) = srcRay_Shdo(3, I) + srcJ_Shdo(2, IS + J)*YlmRay(6, J)&
-                    &+ srcJ_Shdo(3, IS + J)*YlmRay(3, J)
-            end do
-        end if
-        if (isPol4_) then
-            do J = 1, NS
-                srcRay_Shdo(4, I) = srcRay_Shdo(4, I) + srcJ_Shdo(4, IS + J)*YlmRay(4, J)
+                srcRay_Shdo(2, I) = srcRay_Shdo(2, I) + &
+                    srcJ_Shdo(2, IS + J)*YlmRay(2, J) + &
+                    srcJ_Shdo(3, IS + J)*YlmRay(5, J)
+                srcRay_Shdo(3, I) = srcRay_Shdo(3, I) + &
+                    srcJ_Shdo(2, IS + J)*YlmRay(6, J) + &
+                    srcJ_Shdo(3, IS + J)*YlmRay(3, J)
             end do
         end if
 
+        if (isPol4_) then
+            do J = 1, NS
+                srcRay_Shdo(4, I) = srcRay_Shdo(4, I) + &
+                    srcJ_Shdo(4, IS + J)*YlmRay(4, J)
+            end do
+        end if
+        !╰────────────────────────────────────────────────────────────────────────────╯!
+
         ! Special case for solar source and Delta-M
         if ((src_obj_%type .ne. 'T') .and. doTMS) then
+
             if (prp_obj_%Npha .gt. 0) then
                 IPH = ipha_Rtm_(I)
             else
                 IPH = I
             end if
+
             ! First subtract off the truncated single scattering
+            !╭────────────────────────────────────────────────────────────────────────────╮!
             DA = ssa_Rtm_(I)*fluxDir(I)*sec0
             J = 1
             do L = 0, shdo_obj_%maxNl
@@ -530,9 +553,11 @@ subroutine shd_src__computeSrcDir(&
                     end if
                 end if
             end do
+            !╰────────────────────────────────────────────────────────────────────────────╯!
 
             ! Then add in the single scattering contribution for the
             !   original unscaled phase matrix.
+            !╭────────────────────────────────────────────────────────────────────────────╮!
             if (prp_obj_%Npha .gt. 0) then
                 srcRay_Shdo(:, I) = srcRay_Shdo(:, I) + DA*scatVect(:, IPH)
             else if (.not. isPol_) then
@@ -550,6 +575,7 @@ subroutine shd_src__computeSrcDir(&
                     srcRay_Shdo(1, I) = srcRay_Shdo(1, I) + A*legScat(L)
                 end do
             end if
+            !╰────────────────────────────────────────────────────────────────────────────╯!
 
         end if
     end do
