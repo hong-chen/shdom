@@ -426,10 +426,10 @@ subroutine shd_src__computeSrcDir(&
 
         sec0 = 1.0/abs(src_obj_%mu0)
 
-        muScat = src_obj_%mu0*muRay + &
-            sqrt((1.0d0 - src_obj_%mu0**2)* &
-                 (1.0d0 - muRay**2))* &
-                 cos(src_obj_%phi0 - phiRay)
+        muScat = dble(src_obj_%mu0)*dble(muRay) + &
+            sqrt((1.0d0 - dble(src_obj_%mu0)**2)* &
+                 (1.0d0 - dble(muRay)**2))* &
+                 cos(dble(src_obj_%phi0) - dble(phiRay))
 
         if ((prp_obj_%Npha .eq. 0) .and. doTMS) then
             ! If non-tabulate phase functions (unpolarized) then
