@@ -890,19 +890,19 @@ contains
             write(3, '(A)') 'Polarized tabulated phase function property file'
         end if
         write(3, '(3(1X,I5))') NX, NY, NZT
-        write(3, '(2(1X,F15.8),202(1X,F12.6))') DELX, DELY, (ZLEVELS(I), I=1, NZT)
+        write(3, '(2(1X,F15.8),1000(1X,F12.6))') DELX, DELY, (ZLEVELS(I), I=1, NZT)
         write(3, '(1X,I4)') NPHASEOUT
         do I = 0, NPHASE
             if (PHASECONV(I) > 0) then
                 NL = NCOEF(I)
                 do J = 1, NPHASEPOL
                     if (NPHASEPOL == 1) then
-                        write(3, '(1X,I4,5X,200(1X,E15.6))') NL, (WIGCOEF(J, L, I), L=1, min(NL, 200))
+                        write(3, '(3X,I4,5X,2000(1X,E15.6))') NL, (WIGCOEF(J, L, I), L=1, min(NL, 2000))
                     else
-                        write(3, '(1X,I1,1X,I4,5X,201(1X,E15.6))') J, NL, (WIGCOEF(J, L, I), L=0, min(NL, 200))
+                        write(3, '(1X,I1,1X,I4,5X,2001(1X,E15.6))') J, NL, (WIGCOEF(J, L, I), L=0, min(NL, 2000))
                     end if
-                    do K = 200, NL - 1, 200
-                        write(3, '(200(1X,E15.6))') (WIGCOEF(J, K + L, I), L=1, min(NL - K, 200))
+                    do K = 2000, NL - 1, 2000
+                        write(3, '(12X, 2000(1X,E15.6))') (WIGCOEF(J, K + L, I), L=1, min(NL - K, 2000))
                     end do
                 end do
             end if
