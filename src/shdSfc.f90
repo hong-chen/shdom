@@ -780,8 +780,8 @@ subroutine shd_sfc__brdfRTLSR(f_iso, f_geo, f_vol, muInc, muOut, dPhi, refBRDF)
     if (cosI .lt. cosMin) cosI = cosMin
     if (cosO .lt. cosMin) cosO = cosMin
 
-    sinI = sqrt(1.0 - cosI**2)
-    sinO = sqrt(1.0 - cosO**2)
+    sinI = sqrt(1.0 - cosI*cosI)
+    sinO = sqrt(1.0 - cosO*cosO)
     tanI = sinI/cosI
     tanO = sinO/cosO
     cos_phi = cos(dPhi)
@@ -794,7 +794,7 @@ subroutine shd_sfc__brdfRTLSR(f_iso, f_geo, f_vol, muInc, muOut, dPhi, refBRDF)
     if (cos_xi .lt. -1.0) cos_xi = -1.0
     if (cos_xi .gt.  1.0) cos_xi =  1.0
 
-    sin_xi = sqrt(1.0 - cos_xi**2)
+    sin_xi = sqrt(1.0 - cos_xi*cos_xi)
     xi = acos(cos_xi)
 
     ! Eq. 38
@@ -819,14 +819,14 @@ subroutine shd_sfc__brdfRTLSR(f_iso, f_geo, f_vol, muInc, muOut, dPhi, refBRDF)
     cos_xi_p = (cosI_p*cosO_p) + (sinI_p*sinO_p*cos_phi)
 
     ! Eq. 42 (without square root)
-    D_2 = tanI_p**2 + tanO_p**2 - 2.0*tanI_p*tanO_p*cos_phi
+    D_2 = tanI_p*tanI_p + tanO_p*tanO_p - 2.0*tanI_p*tanO_p*cos_phi
     if (D_2 .lt. 0.0) D_2 = 0.0
 
     ! Eq. 41
     cos_t = h2b * (sqrt(D_2 + (tanI_p*tanO_p*sin_phi)**2))/(secI_p + secO_p)
     if (cos_t .lt. -1.0) cos_t = -1.0
     if (cos_t .gt.  1.0) cos_t =  1.0
-    sin_t = sqrt(1.0 - cos_t**2)
+    sin_t = sqrt(1.0 - cos_t*cos_t)
     t = acos(cos_t)
 
     ! Eq. 40
