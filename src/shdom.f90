@@ -1471,6 +1471,7 @@ program shdom
     ! rtm_obj_
     !╭────────────────────────────────────────────────╮!
      if (src_obj_%type .ne. 'T') then
+        ! <9>: deallocate kabs, minExt, maxExt, extDir_Prp
         call shd_rad__computeDirect(9, 0.0, 0.0, 0.0, &
             0, 0, .false., 0, 0.0, 0.0, 0.0, &
             realTmp(1), realTmp(2), realTmp(3), realTmp(4), &
