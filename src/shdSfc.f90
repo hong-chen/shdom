@@ -63,7 +63,7 @@ module shd_sfc
     public :: shd_sfc__brdfFresnel
     public :: shd_sfc__brdfDiner
     public :: shd_sfc__brdfRPV
-    public :: shd_sfc__brdfLSRT
+    public :: shd_sfc__brdfRTLSR
     public :: shd_sfc__brdfJiao
     public :: shd_sfc__brdfOcean
     !╰────────────────────────────────────────────────╯!
@@ -248,7 +248,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, waveLen,&
             end if
 
             dPhi = phiInc-phiOut-pi_
-            call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
+            call shd_sfc__brdfRTLSR(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), -muInc, muOut, dPhi, refBRDF(1, 1))
 
         case ('J', 'j')
@@ -319,7 +319,7 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, waveLen,&
                 case (3)
 
                     dPhi = phiInc-phiOut-pi_
-                    call shd_sfc__brdfLSRT(REFPARMS(1), REFPARMS(2),&
+                    call shd_sfc__brdfRTLSR(REFPARMS(1), REFPARMS(2),&
                         &REFPARMS(3), -muInc, muOut, dPhi, refBRDF(1, 1))
 
                 ! 4.0
@@ -731,108 +731,119 @@ subroutine shd_sfc__brdfRPV(RHO0, K, THETA, muInc, muOut, PHI, refBRDF)
 
 end subroutine shd_sfc__brdfRPV
 
-subroutine shd_sfc__brdfLSRT(F_ISO, F_GEO, F_VOL, muInc, muOut, PHI, refBRDF)
+subroutine shd_sfc__brdfRTLSR(f_iso, f_geo, f_vol, muInc, muOut, dPhi, refBRDF)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! Computes the RossLi BRDF.
-    ! muInc: cosine of zenith angle of the incident light (solar zenith angle)
-    ! muOut: cosine of zenith angle of the receiver (viewing zenith angle)
-    ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
+    ! Computes the RossThick-LiSparseReciprocal BRDF used by MODIS and VIIRS BRDF/
+    !   Albedo products.
     !
-    ! When muInc>0 and the hot spot is muOut=muInc and PHI=0
+    ! Input:
+    !   f_iso: isotropic scattering coefficient
+    !   f_geo: geometric coefficient
+    !   f_vol: volumetric scattering coefficient
+    !   muInc: cosine of zenith angle of the incident light (solar zenith angle)
+    !   muOut: cosine of zenith angle of the receiver (viewing zenith angle)
+    !   dPhi: relative azimuth angle, 0 pointing east, positive counter-clockwise
+    !
+    ! Output:
+    !   refBRDF: BRDF reflectance
+    !
+    ! Note:
+    !   When muInc>0 and the hot spot is muOut=muInc and dPhi=0
     !
     ! Code reference:
     !   https://github.com/vikasnataraja/sif-sat/blob/master/sifsat/kernels.py
     ! Formula reference:
     !   MODIS BRDF/Albedo Product ATBD v5.0, equations 37-44
     !╰────────────────────────────────────────────────────────────────────────────╯!
+    real(R__), intent(in)  :: f_iso, f_geo, f_vol, muInc, muOut, dPhi
+    real(R__), intent(out) :: refBRDF
 
-    real(4), intent(in)  :: F_ISO, F_GEO, F_VOL, muInc, muOut, PHI
-    real(4), intent(out) :: refBRDF
-    real(4) :: COS1, COS2, SIN1, SIN2, TAN1, TAN2, COS_PHI, SIN_PHI
-    real(4) :: K_GEO, K_VOL
-    real(4) :: XI, COS_XI, SIN_XI
-    real(4) :: B2R, H2B
-    real(4) :: THETA1_, COS1_, SIN1_, TAN1_, SEC1_
-    real(4) :: THETA2_, COS2_, SIN2_, TAN2_, SEC2_
-    real(4) :: COS_XI_, D_2, COS_T, SIN_T, T, O
-    real(4) :: COS_MIN
+    real(R__), parameter :: b2r=1.0, h2b=2.0
+
+    real(R__) :: cosI, cosO, sinI, sinO, tanI, tanO, cos_phi, sin_phi
+    real(R__) :: K_geo, K_vol
+    real(R__) :: xi, cos_xi, sin_xi
+    real(R__) :: cosI_p, sinI_p, tanI_p, secI_p
+    real(R__) :: cosO_p, sinO_p, tanO_p, secO_p
+    real(R__) :: cos_xi_p, D_2, cos_t, sin_t, t, Omicron
+    real(R__) :: cosMin
 
 
     ! calculate trigonometry
     !╭────────────────────────────────────────────────╮!
-    COS_MIN = 0.03
+    cosMin = 0.03
 
-    COS1 = muInc
-    COS2 = muOut
+    cosI = muInc
+    cosO = muOut
 
-    if (COS1 .lt. COS_MIN) COS1 = COS_MIN
-    if (COS2 .lt. COS_MIN) COS2 = COS_MIN
+    if (cosI .lt. cosMin) cosI = cosMin
+    if (cosO .lt. cosMin) cosO = cosMin
 
-    SIN1 = sqrt(1.0 - COS1**2)
-    SIN2 = sqrt(1.0 - COS2**2)
-    TAN1 = SIN1/COS1
-    TAN2 = SIN2/COS2
-    COS_PHI = cos(PHI)
-    SIN_PHI = sin(PHI)
+    sinI = sqrt(1.0 - cosI**2)
+    sinO = sqrt(1.0 - cosO**2)
+    tanI = sinI/cosI
+    tanO = sinO/cosO
+    cos_phi = cos(dPhi)
+    sin_phi = sin(dPhi)
     !╰────────────────────────────────────────────────╯!
 
-    ! K_VOL
+    ! K_vol
     !╭────────────────────────────────────────────────╮!
-    COS_XI = (COS1*COS2) + (SIN1*SIN2*COS_PHI)
-    if (COS_XI .lt. -1.0) COS_XI = -1.0
-    if (COS_XI .gt.  1.0) COS_XI =  1.0
+    cos_xi = (cosI*cosO) + (sinI*sinO*cos_phi)
+    if (cos_xi .lt. -1.0) cos_xi = -1.0
+    if (cos_xi .gt.  1.0) cos_xi =  1.0
 
-    SIN_XI = sqrt(1.0 - COS_XI**2)
-    XI = acos(COS_XI)
+    sin_xi = sqrt(1.0 - cos_xi**2)
+    xi = acos(cos_xi)
 
-    K_VOL = ((pi_/2.0 - XI)*COS_XI + SIN_XI)/(COS1+COS2) - (pi_/4.0)
+    ! Eq. 38
+    K_vol = ((pi_/2.0 - xi)*cos_xi + sin_xi)/(cosI+cosO) - (pi_/4.0)
     !╰────────────────────────────────────────────────╯!
 
-    ! K_GEO
+    ! K_geo
     !╭────────────────────────────────────────────────╮!
-    B2R = 1.0
-    H2B = 2.0
+    ! Eq. 44 (left) [used tan instead of atan, can save a few calculations]
+    tanI_p = b2r*tanI
+    cosI_p = 1.0/sqrt(1.0+tanI_p*tanI_p)
+    sinI_p = tanI_p*cosI_p
+    secI_p = 1.0/cosI_p
 
-    THETA1_ = atan(B2R*TAN2)
-    COS1_ = cos(THETA1_)
-    if (COS1_ .lt. -1.0) COS1_ = -1.0
-    if (COS1_ .gt.  1.0) COS1_ =  1.0
-    SIN1_ = sqrt(1.0 - COS1_**2)
-    TAN1_ = SIN1_/COS1_
-    SEC1_ = 1.0/COS1_
+    ! Eq. 44 (right) [used tan instead of atan, can save a few calculations]
+    tanO_p = b2r*tanO
+    cosO_p = 1.0/sqrt(1.0+tanO_p*tanO_p)
+    sinO_p = tanO_p*cosO_p
+    secO_p = 1.0/cosO_p
 
-    THETA2_ = atan(B2R*TAN1)
-    COS2_ = cos(THETA2_)
-    if (COS2_ .lt. -1.0) COS2_ = -1.0
-    if (COS2_ .gt.  1.0) COS2_ =  1.0
-    SIN2_ = sqrt(1.0 - COS2_**2)
-    TAN2_ = SIN2_/COS2_
-    SEC2_ = 1.0/COS2_
+    ! Eq. 43
+    cos_xi_p = (cosI_p*cosO_p) + (sinI_p*sinO_p*cos_phi)
 
-    COS_XI_ = (COS1_*COS2_) + (SIN1_*SIN2_*COS_PHI)
-
-    D_2 = TAN1_**2 + TAN2_**2 - 2.0*TAN1_*TAN2_*COS_PHI
+    ! Eq. 42 (without square root)
+    D_2 = tanI_p**2 + tanO_p**2 - 2.0*tanI_p*tanO_p*cos_phi
     if (D_2 .lt. 0.0) D_2 = 0.0
 
-    COS_T = H2B * (sqrt(D_2 + (TAN1_*TAN2_*SIN_PHI)**2))/(SEC1_ + SEC2_)
-    if (COS_T .lt. -1.0) COS_T = -1.0
-    if (COS_T .gt.  1.0) COS_T =  1.0
-    SIN_T = sqrt(1.0 - COS_T**2)
-    T = acos(COS_T)
+    ! Eq. 41
+    cos_t = h2b * (sqrt(D_2 + (tanI_p*tanO_p*sin_phi)**2))/(secI_p + secO_p)
+    if (cos_t .lt. -1.0) cos_t = -1.0
+    if (cos_t .gt.  1.0) cos_t =  1.0
+    sin_t = sqrt(1.0 - cos_t**2)
+    t = acos(cos_t)
 
-    O = (1.0/pi_) * (T - SIN_T*COS_T) * (SEC1_ + SEC2_)
+    ! Eq. 40
+    Omicron = (1.0/pi_) * (t - sin_t*cos_t) * (secI_p + secO_p)
 
-    K_GEO = O - SEC1_ - SEC2_ + 0.5d0*(1.0+COS_XI_)*SEC1_*SEC2_
+    ! Eq. 39
+    K_geo = Omicron - secI_p - secO_p + 0.5d0*(1.0+cos_xi_p)*secI_p*secO_p
     !╰────────────────────────────────────────────────╯!
 
-    refBRDF = F_ISO + F_VOL*K_VOL + F_GEO*K_GEO
+    ! Eq. 37
+    refBRDF = f_iso + f_vol*K_vol + f_geo*K_geo
 
     if (refBRDF .lt. 0.0) refBRDF = 0.0
 
     return
 
-end subroutine shd_sfc__brdfLSRT
+end subroutine shd_sfc__brdfRTLSR
 
 ! subroutine shd_sfc__brdfLSRTKZ(F_ISO, F_GEO, F_VOL, F_KZ, muInc, muOut, PHI, refBRDF)
 
@@ -1040,7 +1051,7 @@ subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, muInc, muOut, PHI
     B2R = 1.0
     H2B = 2.0
 
-    THETA1_ = atan(B2R*TAN2)
+    THETA1_ = atan(B2R*TAN1)
     COS1_ = cos(THETA1_)
     if (COS1_ .lt. -1.0) COS1_ = -1.0
     if (COS1_ .gt.  1.0) COS1_ =  1.0
@@ -1048,7 +1059,7 @@ subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, muInc, muOut, PHI
     TAN1_ = SIN1_/COS1_
     SEC1_ = 1.0/COS1_
 
-    THETA2_ = atan(B2R*TAN1)
+    THETA2_ = atan(B2R*TAN2)
     COS2_ = cos(THETA2_)
     if (COS2_ .lt. -1.0) COS2_ = -1.0
     if (COS2_ .gt.  1.0) COS2_ =  1.0
