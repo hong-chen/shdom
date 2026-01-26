@@ -1305,11 +1305,11 @@ subroutine shd_io__readSfcSize(sfc_obj)
             sfc_obj%maxNpar = 4
         ! 3
         case ('VT', 'Vt')
-            ! Surface file type T is for LSRT surface
+            ! Surface file type T is for RTLSR surface
             sfc_obj%maxNpar = 4
         ! 4
         case ('VJ', 'Vj')
-            ! Surface file type J is for LSRT-Jiao surface
+            ! Surface file type J is for RTLSR-Jiao surface
             sfc_obj%maxNpar = 6
         ! -1
         case ('VW', 'Vw')
@@ -1349,8 +1349,8 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
     !   L  Lambertian    albedo
     !   O  Ocean         [albedo], Wind speed (m/s), Pigmentation (mg/m^3) {albedo is added for easily retrieve average albedo}
     !   R  RPV           rho0, k, Theta
-    !   T  LSRT          f_iso, f_geo, f_vol
-    !   J  LSRT-Jiao     f_iso, f_geo, f_vol, f_jiao, alpha
+    !   T  RTLSR         f_iso, f_geo, f_vol
+    !   J  RTLSR-Jiao     f_iso, f_geo, f_vol, f_jiao, alpha
     !   W  Wave-Fresnel  [albedo], Real, Imaginary index of refraction, wind speed (m/s) {albedo is added for easily retrieve
     !                    average albedo}
     !   D  Diner et al   a, k, b, zeta, sigma
@@ -1424,7 +1424,7 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
             doAlb = .true.
 
         case ('VT', 'Vt')
-            ! Surface file type T is for LSRT surface:
+            ! Surface file type T is for RTLSR surface:
 
             ! 1: temperature
             ! 2: f_iso
@@ -1435,7 +1435,7 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
             doAlb = .true.
 
         case ('VJ', 'Vj')
-            ! Surface file type J is for LSRT-Jiao surface:
+            ! Surface file type J is for RTLSR-Jiao surface:
 
             ! 1: temperature
             ! 2: f_iso
@@ -1483,8 +1483,8 @@ subroutine shd_io__readSfc(sfc_obj, brdf_Sfc)
             ! for Lambertian   (VL):ix, iy, temp0,   alb0,   -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
             ! for Ocean        (VO):ix, iy, temp0,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
             ! for RPV          (VR):ix, iy, temp0,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
-            ! for LSRT         (VT):ix, iy, temp0,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
-            ! for LSRT-J       (VJ):ix, iy, temp0,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
+            ! for RTLSR        (VT):ix, iy, temp0,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
+            ! for RTLSR-J      (VJ):ix, iy, temp0,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
             ! for Wave-Fresnel (VW):ix, iy, temp0,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
             ! for Diner        (VD):ix, iy, temp0,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
 

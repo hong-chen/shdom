@@ -170,9 +170,9 @@ subroutine shd_io__outputResult(&
     else if (sfc_obj_%type .eq. 'VR') then
         SFCNAME = 'VARIABLE RPV'
     else if (sfc_obj_%type .eq. 'VT') then
-        SFCNAME = 'VARIABLE LSRT'
+        SFCNAME = 'VARIABLE RTLSR'
     else if (sfc_obj_%type .eq. 'VJ') then
-        SFCNAME = 'VARIABLE LSRT-J'
+        SFCNAME = 'VARIABLE RTLSR-J'
     else if (sfc_obj_%type .eq. 'VX') then
         SFCNAME = 'VARIABLE MIXED'
     else if (sfc_obj_%type(1:1) .eq. 'V') then
@@ -1255,9 +1255,9 @@ subroutine shd_io__outputResultMpi(&
     else if (sfc_obj_%type .eq. 'VR') then
         SFCNAME = 'VARIABLE RPV'
     else if (sfc_obj_%type .eq. 'VT') then
-        SFCNAME = 'VARIABLE LSRT'
+        SFCNAME = 'VARIABLE RTLSR'
     else if (sfc_obj_%type .eq. 'VJ') then
-        SFCNAME = 'VARIABLE LSRT-J'
+        SFCNAME = 'VARIABLE RTLSR-J'
     else if (sfc_obj_%type .eq. 'VX') then
         SFCNAME = 'VARIABLE MIXED'
     else if (sfc_obj_%type(1:1) .eq. 'V') then
@@ -1970,9 +1970,9 @@ subroutine shd_io__outputCamRad(&
     else if (sfc_obj_%type .eq. 'VR') then
         SFCNAME = 'VARIABLE RPV'
     else if (sfc_obj_%type .eq. 'VT') then
-        SFCNAME = 'VARIABLE LSRT'
+        SFCNAME = 'VARIABLE RTLSR'
     else if (sfc_obj_%type .eq. 'VJ') then
-        SFCNAME = 'VARIABLE LSRT-J'
+        SFCNAME = 'VARIABLE RTLSR-J'
     else if (sfc_obj_%type .eq. 'VX') then
         SFCNAME = 'VARIABLE MIXED'
     else if (sfc_obj_%type(1:1) .eq. 'V') then
@@ -2252,9 +2252,9 @@ subroutine shd_io__outputImg(&
     else if (sfc_obj_%type .eq. 'VR') then
         SFCNAME = 'VARIABLE RPV'
     else if (sfc_obj_%type .eq. 'VT') then
-        SFCNAME = 'VARIABLE LSRT'
+        SFCNAME = 'VARIABLE RTLSR'
     else if (sfc_obj_%type .eq. 'VJ') then
-        SFCNAME = 'VARIABLE LSRT-J'
+        SFCNAME = 'VARIABLE RTLSR-J'
     else if (sfc_obj_%type .eq. 'VX') then
         SFCNAME = 'VARIABLE MIXED'
     else if (sfc_obj_%type(1:1) .eq. 'V') then

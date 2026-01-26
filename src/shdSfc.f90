@@ -197,8 +197,8 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, waveLen,&
     ! D  Diner et al   a, k, b, zeta, sigma
     ! O  Ocean         Wind speed (m/s), Pigmentation (mg/m^3)
     ! R  RPV-original  rho0, k, Theta
-    ! T  LSRT          k_iso, k_geo, k_vol
-    ! J  LSRT-Jiao     k_iso, k_geo, k_vol, k_j, alpha
+    ! T  RTLSR          k_iso, k_geo, k_vol
+    ! J  RTLSR-Jiao     k_iso, k_geo, k_vol, k_j, alpha
     ! M  Mixed surface
     !╰────────────────────────────────────────────────────────────────────────────╯!
 
@@ -242,9 +242,9 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, waveLen,&
 
         case ('T', 't')
 
-            ! T: LSRT model
+            ! T: RTLSR model
             if (isPol_) then
-                stop 'Error [_brdfSurface]: LSRT BRDF is only for unpolarized case.'
+                stop 'Error [_brdfSurface]: RTLSR BRDF is only for unpolarized case.'
             end if
 
             dPhi = phiInc-phiOut-pi_
@@ -253,15 +253,15 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, waveLen,&
 
         case ('J', 'j')
 
-            ! J: LSRT-Jiao model
+            ! J: RTLSR-Jiao model
             if (isPol_) then
-                stop 'Error [_brdfSurface]: LSRT-Jiao BRDF is only for unpolarized case'
+                stop 'Error [_brdfSurface]: RTLSR-Jiao BRDF is only for unpolarized case'
             end if
 
             !dPhi = phiInc-phiOut-pi_
             dPhi = phiInc-phiOut
-            ! J: LSRT-Jiao model
-            call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
+            ! J: RTLSR-Jiao model
+            call shd_sfc__brdfRTLSRJ(REFPARMS(1), REFPARMS(2),&
                 &REFPARMS(3), REFPARMS(4), REFPARMS(5), -muInc, muOut, dPhi, refBRDF(1, 1))
 
         case ('W', 'w')
@@ -281,13 +281,13 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, waveLen,&
 
         case ('X', 'x')
 
-                ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
-                ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
-                ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
-                ! for LSRT         (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
-                ! for LSRT-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
-                ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
-                ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
+            ! for Lambertian   (VL):IX, IY, TEMP,   ALB,    -999.0, -999.0, -999.0, -999.0, -999.0,  0.0
+            ! for Ocean        (VO):IX, IY, TEMP,   WSPD,   PCL,    -999.0, -999.0, -999.0, -999.0,  1.0
+            ! for RPV          (VR):IX, IY, TEMP,   RHO0,   KR,     THETA,  -999.0, -999.0, -999.0,  2.0
+            ! for RTLSR        (VT):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  -999.0, -999.0, -999.0,  3.0
+            ! for RTLSR-J       (VJ):IX, IY, TEMP,   F_ISO,  F_GEO,  F_VOL,  F_JIAO, ALPHA,  -999.0,  4.0
+            ! for Wave-Fresnel (VW):IX, IY, TEMP,   MRE,    MIM,    WSPD,   -999.0, -999.0, -999.0, -1.0
+            ! for Diner        (VD):IX, IY, TEMP,   A,      KR,     B,      ZETA,   SIGMA,  -999.0, -2.0
 
             if ((REFPARMS(iSFC_ID) .gt. -0.01) .and. (NSTOKES .gt. 1)) then
                 stop 'Error [_brdfSurface]: Mixed surface is only for unpolarized case.'
@@ -326,8 +326,8 @@ subroutine shd_sfc__brdfSurface(SFCTYPE, REFPARMS, waveLen,&
                 case (4)
 
                     dPhi = phiInc-phiOut
-                    ! J: LSRT-Jiao model
-                    call shd_sfc__brdfLSRTJ(REFPARMS(1), REFPARMS(2),&
+                    ! J: RTLSR-Jiao model
+                    call shd_sfc__brdfRTLSRJ(REFPARMS(1), REFPARMS(2),&
                         &REFPARMS(3), REFPARMS(4), REFPARMS(5), -muInc, muOut, dPhi, refBRDF(1, 1))
 
                 ! -1.0
@@ -845,10 +845,10 @@ subroutine shd_sfc__brdfRTLSR(f_iso, f_geo, f_vol, muInc, muOut, dPhi, refBRDF)
 
 end subroutine shd_sfc__brdfRTLSR
 
-! subroutine shd_sfc__brdfLSRTKZ(F_ISO, F_GEO, F_VOL, F_KZ, muInc, muOut, PHI, refBRDF)
+! subroutine shd_sfc__brdfRTLSRKZ(F_ISO, F_GEO, F_VOL, F_KZ, muInc, muOut, PHI, refBRDF)
 
 !     !╭────────────────────────────────────────────────────────────────────────────╮!
-!     ! Computes the RossLi-KokhanovskyZege BRDF (combines LSRT model above with a fourth kernel for snow from Kokhanovsky-Zege).
+!     ! Computes the RossLi-KokhanovskyZege BRDF (combines RTLSR model above with a fourth kernel for snow from Kokhanovsky-Zege).
 !     ! muInc: cosine of zenith angle of the incident light (solar zenith angle)
 !     ! muOut: cosine of zenith angle of the receiver (viewing zenith angle)
 !     ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
@@ -985,12 +985,12 @@ end subroutine shd_sfc__brdfRTLSR
 
 !     return
 
-! end subroutine shd_sfc__brdfLSRTKZ
+! end subroutine shd_sfc__brdfRTLSRKZ
 
-subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, muInc, muOut, PHI, refBRDF)
+subroutine shd_sfc__brdfRTLSRJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, muInc, muOut, PHI, refBRDF)
 
     !╭────────────────────────────────────────────────────────────────────────────╮!
-    ! Computes the RossLi-Jiao BRDF (combines LSRT model above with a fourth kernel for snow from Jiao et al.).
+    ! Computes the RossLi-Jiao BRDF (combines RTLSR model above with a fourth kernel for snow from Jiao et al.).
     ! muInc: cosine of zenith angle of the incident light (solar zenith angle)
     ! muOut: cosine of zenith angle of the receiver (viewing zenith angle)
     ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
@@ -1095,7 +1095,7 @@ subroutine shd_sfc__brdfLSRTJ(F_ISO, F_GEO, F_VOL, F_J, ALPHA, muInc, muOut, PHI
 
     return
 
-end subroutine shd_sfc__brdfLSRTJ
+end subroutine shd_sfc__brdfRTLSRJ
 
 subroutine shd_sfc__brdfJiao(muInc, muOut, PHI, ALPHA, NORMALIZE, K_J)
 
@@ -1105,7 +1105,7 @@ subroutine shd_sfc__brdfJiao(muInc, muOut, PHI, ALPHA, NORMALIZE, K_J)
     ! muOut: cosine of zenith angle of the receiver (viewing zenith angle)
     ! PHI: relative azimuth angle, 0 pointing east, positive counter-clockwise
     ! ALPHA: parameter for the empirical function to control the forward scattering. Jiao et al. (2019) suggest ALPHA=0.2-0.3.
-    ! NORMALIZE: whether to add a normalizer term to the reflectance (1 for yes, 0 for no). If combining this kernel with an isotropic kernel (such as the case with RTLSR/LSRT), set NORMALIZE=1.
+    ! NORMALIZE: whether to add a normalizer term to the reflectance (1 for yes, 0 for no). If combining this kernel with an isotropic kernel (such as the case with RTLSR/RTLSR), set NORMALIZE=1.
     !
     ! When muInc>0 and the hot spot is muOut=muInc and PHI=0
     !
