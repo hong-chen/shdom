@@ -41,7 +41,7 @@
 
 program put
     integer :: i
-    character(len=1200) :: arg
+    character(len=5000) :: arg
 
     do i = 1, command_argument_count()
         call get_command_argument(i, arg)
